@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: lcp-exporter
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: lcp-exporter
+  template:
+    metadata:
+      labels:
+        app: lcp-exporter
+    spec:
+      containers:
+        - name: lcp-exporter
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: "{{ .Values.image.pullPolicy }}"
+          env:
+            - name: TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.googleSecretManager.secretName }}
+                  key: token
+          ports:
+            - containerPort: {{ .Values.service.port }}

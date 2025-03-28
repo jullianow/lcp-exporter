@@ -1,0 +1,19 @@
+replicaCount: 1
+
+image:
+  repository: your-docker-repo/lcp-exporter
+  tag: latest
+  pullPolicy: IfNotPresent
+
+service:
+  port: 8080
+
+googleSecretManager:
+  secretName: your-secret-name    # The name of the secret in Google Secret Manager
+  projectID: your-gcp-project-id  # The GCP project ID
+  version: latest                 # The version of the secret (e.g., "latest" or a specific version)
+
+# Optional: Add the service account credentials for accessing Google Secret Manager
+gcpSecretCreds:
+  secretName: gcp-secret-creds    # The name of the Kubernetes secret holding the credentials
+  secretKey: credentials.json    # The key that contains the GCP credentials JSON

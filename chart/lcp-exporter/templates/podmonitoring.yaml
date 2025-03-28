@@ -1,0 +1,13 @@
+apiVersion: monitoring.googleapis.com/v1
+kind: PodMonitoring
+metadata:
+  name: lcp-exporter
+spec:
+  podTarget:
+    selector:
+      matchLabels:
+        app: lcp-exporter
+  endpoint:
+    port: {{ .Values.service.port }}
+    path: /metrics
+    interval: 10s

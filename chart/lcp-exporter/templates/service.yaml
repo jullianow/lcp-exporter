@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: lcp-exporter
+spec:
+  ports:
+    - port: {{ .Values.service.port }}
+      targetPort: 8080
+  selector:
+    app: lcp-exporter
