@@ -1,0 +1,6 @@
+apiVersion: v2
+name: lcp-exporter
+description: A Helm chart for Kubernetes to deploy lcp-exporter
+version: 0.0.1
+appVersion: 0.0.1
+

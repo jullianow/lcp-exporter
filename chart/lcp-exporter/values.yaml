@@ -1,0 +1,12 @@
+# -- Number of replicas to run. This is the default value for the number of replicas in the deployment.
+replicaCount: 1
+
+# -- Image settings
+image:
+  repository: ghcr.io/jullianow/lcp-exporter
+  tag:
+  pullPolicy: IfNotPresent
+
+# -- Service settings
+service:
+  port: 8080
