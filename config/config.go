@@ -25,13 +25,13 @@ func ParseFlags() *Config {
 
 	flag.StringVar(&cfg.LogFormat, "log-format", "json", "Log format (json or text)")
 	flag.StringVar(&cfg.LogLevel, "log-level", "info", "Log level (debug, info, warn, error)")
-	flag.StringVar(&cfg.Endpoint, "endpoint", "", "Base endpoint for the REST API (example: https://api.liferay.st)")
-	flag.StringVar(&cfg.Port, "port", "9103", "Port for the HTTP server (default: 9103)")
-	flag.StringVar(&cfg.MetricsPath, "metrics-path", "/metrics", "Path for the metrics endpoint (default: /metrics)")
-	flag.BoolVar(&cfg.EnableGoMetrics, "enable-go-metrics", false, "Enable Go default metrics (default: false)")
-	flag.BoolVar(&cfg.EnableProcessMetrics, "enable-process-metrics", false, "Enable process metrics (default: false)")
-	flag.BoolVar(&cfg.EnablePromHttpMetrics, "enable-promhttp-metrics", false, "Enable promhttp metrics (default: false)")
-	flag.BoolVar(&cfg.EnableClusterDiscoveryMetrics, "enable-cluster-discovery-metrics", true, "Enable cluster discovery metrics (default: false)")
+	flag.StringVar(&cfg.Endpoint, "endpoint", "", "Base endpoint for the REST API")
+	flag.StringVar(&cfg.Port, "port", "9103", "Port for the HTTP server")
+	flag.StringVar(&cfg.MetricsPath, "metrics-path", "/metrics", "Path for the metrics endpoint")
+	flag.BoolVar(&cfg.EnableGoMetrics, "enable-go-metrics", false, "Enable Go default metrics")
+	flag.BoolVar(&cfg.EnableProcessMetrics, "enable-process-metrics", false, "Enable process metrics")
+	flag.BoolVar(&cfg.EnablePromHttpMetrics, "enable-promhttp-metrics", false, "Enable promhttp metrics")
+	flag.BoolVar(&cfg.EnableClusterDiscoveryMetrics, "enable-cluster-discovery-metrics", true, "Enable cluster discovery metrics")
 
 	flag.Parse()
 
@@ -42,10 +42,10 @@ func ParseFlags() *Config {
 		logrus.SetFormatter(&logrus.TextFormatter{FullTimestamp: true})
 	}
 
-	cfg.Token = os.Getenv("TOKEN")
+	cfg.Token = os.Getenv("LCP_API_TOKEN")
 
 	if cfg.Token == "" {
-		logrus.Fatal("Authentication error: Provide either TOKEN")
+		logrus.Fatal("Authentication error: Provide either LCP_API_TOKEN")
 	}
 
 	if cfg.Endpoint == "" {

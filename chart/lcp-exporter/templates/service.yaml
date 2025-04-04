@@ -1,10 +1,17 @@
+{{- if .Values.service.enabled }}
 apiVersion: v1
 kind: Service
 metadata:
-  name: lcp-exporter
+  name: {{ include "lcp-exporter.fullname" . }}
+  labels:
+    {{- include "lcp-exporter.labels" . | nindent 4 }}
 spec:
+  type: {{ .Values.service.type }}
   ports:
     - port: {{ .Values.service.port }}
-      targetPort: 8080
+      targetPort: http
+      protocol: TCP
+      name: http
   selector:
-    app: lcp-exporter
+    {{- include "lcp-exporter.selectorLabels" . | nindent 4 }}
+{{- end }}

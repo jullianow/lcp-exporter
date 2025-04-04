@@ -51,7 +51,7 @@ jobs:
       - name: Bump Chart.yaml version
         uses: mikefarah/yq@master
         with:
-          cmd: yq -i '.version = strenv(VERSION) | .appVersion = strenv(VERSION)' ./chart/${{ env.REPO_NAME }}/Chart.yaml
+          cmd: yq -i '.version = strenv(VERSION) | .appVersion = "v"+strenv(VERSION)' ./chart/${{ env.REPO_NAME }}/Chart.yaml
         env:
           VERSION: ${{ env.VERSION }}
       - name: Run helm-docs

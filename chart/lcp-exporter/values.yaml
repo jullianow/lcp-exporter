@@ -1,12 +1,78 @@
-# -- Number of replicas to run. This is the default value for the number of replicas in the deployment.
+# Default values for lcp-exporter.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
 replicaCount: 1
 
-# -- Image settings
 image:
-  repository: ghcr.io/jullianow/lcp-exporter
-  tag:
+  repository: ghcr.io/julliano/lcp-exporter
+  # if not set appVersion field from Chart.yaml is used
+  tag: ""
   pullPolicy: IfNotPresent
 
-# -- Service settings
+nameOverride: ""
+fullnameOverride: ""
+
 service:
-  port: 8080
+  enabled: true
+  type: ClusterIP
+  port: 9103
+  annotations: {}
+    # prometheus.io/scrape: "true"
+    # prometheus.io/port: "9100"
+
+resources: {}
+  # We usually recommend not to specify default resources and to leave this as a conscious
+  # choice for the user. This also increases chances charts run on environments with little
+  # resources, such as Minikube. If you do want to specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  # limits:
+  #  cpu: 100m
+  #  memory: 128Mi
+  # requests:
+  #  cpu: 100m
+  #  memory: 128Mi
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+lcp:
+  apiToken: "YourLCPApiToken"
+
+config:
+  logFormat: json
+  logLevel: info
+  endpoint: https://api.example.com
+  metricsPath: /metrics
+  enableGoMetrics: false
+  enableProcessMetrics: false
+  enablePromHttpMetrics: false
+  enableClusterDiscoveryMetrics: true
+
+pod:
+  annotations: {}
+    # key: "true"
+    # example: "false"
+
+existingSecret:
+  name: ""
+
+secret:
+  annotations: {}
+    # key: "true"
+    # example: "false"
+
+# Define a serviceAccount name
+serviceAccount:
+  create: false
+  name: ""
+  annotations: {}
+
+# Additional Volume Mounts
+extraVolumeMounts: []
+
+# Additional Volumes
+extraVolumes: []

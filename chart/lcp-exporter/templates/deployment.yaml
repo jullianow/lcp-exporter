@@ -1,26 +1,82 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: lcp-exporter
+  name: {{ include "lcp-exporter.fullname" . }}
+  labels:
+    {{- include "lcp-exporter.labels" . | nindent 4 }}
 spec:
   replicas: {{ .Values.replicaCount }}
   selector:
     matchLabels:
-      app: lcp-exporter
+      {{- include "lcp-exporter.selectorLabels" . | nindent 6 }}
   template:
     metadata:
+      {{- if .Values.pod.annotations }}
+      annotations:
+        {{- toYaml .Values.pod.annotations | nindent 8 }}
+      {{- end }}
       labels:
-        app: lcp-exporter
+        {{- include "lcp-exporter.selectorLabels" . | nindent 8 }}
     spec:
+      serviceAccountName: {{ template "lcp-exporter.serviceAccountName" . }}
       containers:
-        - name: lcp-exporter
-          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
-          imagePullPolicy: "{{ .Values.image.pullPolicy }}"
+        - name: {{ .Chart.Name }}
+          args:
+            - "-log-format"
+            - {{ .Values.config.logFormat | quote }}
+            - "-log-level"
+            - {{ .Values.config.logLevel | quote }}
+            - "-endpoint"
+            - {{ .Values.config.endpoint | quote }}
+            - "-metrics-path"
+            - {{ .Values.config.metricsPath | quote }}
+            - "-enable-go-metrics"
+            - {{ .Values.config.enableGoMetrics | quote }}
+            - "-enable-process-metrics"
+            - {{ .Values.config.enableProcessMetrics | quote }}
+            - "-enable-promhttp-metrics"
+            - {{ .Values.config.enablePromHttpMetrics | quote }}
+            - "-enable-cluster-discovery-metrics"
+            - {{ .Values.config.enableClusterDiscoveryMetrics | quote }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
           env:
-            - name: TOKEN
+            - name: LCP_API_TOKEN
               valueFrom:
                 secretKeyRef:
-                  name: {{ .Values.googleSecretManager.secretName }}
-                  key: token
+                  name: {{ include "lcp-exporter.secretName" . }}
+                  key: lcpApiToken
           ports:
-            - containerPort: {{ .Values.service.port }}
+            - name: http
+              containerPort: {{ .Values.service.port }}
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+          {{- if .Values.extraVolumeMounts }}
+          volumeMounts:
+{{ toYaml .Values.extraVolumeMounts | indent 10 }}
+          {{- end }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+    {{- end }}
+    {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+    {{- end }}
+    {{- if .Values.extraVolumes }}
+      volumes:
+{{ toYaml .Values.extraVolumes | indent 8 }}
+    {{- end }}

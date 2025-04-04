@@ -1,5 +1,16 @@
 apiVersion: v2
 name: lcp-exporter
-description: A Helm chart for Kubernetes to deploy lcp-exporter
 version: 0.0.1
-appVersion: 0.0.1
+appVersion: v0.0.1
+home: https://github.com/jullianow/lcp-exporter
+description: A Helm chart for LCP Exporter
+keywords:
+  - prometheus
+  - lcp
+sources:
+  - https://github.com/jullianow/lcp-exporter
+maintainers:
+  - name: jullianow
+    email: jullianiw@gmail.com
+    url: https://github.com/jullianow
+icon: https://raw.githubusercontent.com/cncf/artwork/master/prometheus/icon/color/prometheus-icon-color.svg
