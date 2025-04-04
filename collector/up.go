@@ -46,7 +46,11 @@ func (c *upCollector) collectMetrics(ch chan<- prometheus.Metric) {
 		logrus.Errorf("Error collecting health check data: %v", err)
 		return
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			logrus.Warnf("Error closing response body: %v", err)
+		}
+	}()
 
 	var responseData internal.HealthCheck
 	if err := json.NewDecoder(resp.Body).Decode(&responseData); err != nil {

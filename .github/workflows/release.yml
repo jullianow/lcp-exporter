@@ -23,7 +23,7 @@ jobs:
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GHCR }}
       - name: Extract current version from VERSION
-        run: echo "VERSION=$(cat VERSION | sed -e 's,.*/\(.*\),\1,;s/-snapshot$//')" >> $GITHUB_ENV
+        run: echo "VERSION=$(sed -e 's,.*/\(.*\),\1,;s/-snapshot$//' VERSION)" >> "$GITHUB_ENV"
       - name: Buildx Multi-platform Linux Docker Images
         id: docker-build-push-multi-platform
         uses: docker/build-push-action@v6
@@ -32,5 +32,5 @@ jobs:
           platforms: linux/amd64,linux/arm64/v7,linux/arm64
           file: ./Dockerfile
           build-args: VERSION=${{ env.VERSION }}
-          tags: ${{ env.REGISTRY }}/${{ githuh.repository }}:${{ env.VERSION }}
+          tags: ${{ env.REGISTRY }}/${{ github.repository }}:${{ env.VERSION }}
           push: true

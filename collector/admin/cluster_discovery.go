@@ -55,7 +55,12 @@ func (c *clusterDiscoveryCollector) collectMetrics(ch chan<- prometheus.Metric) 
 		logrus.Errorf("Error collecting cluster discovery data: %v", err)
 		return
 	}
-	defer resp.Body.Close()
+
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			logrus.Warnf("Error closing response body: %v", err)
+		}
+	}()
 
 	if resp.StatusCode != http.StatusOK {
 		logrus.Errorf("Error accessing cluster discovery API: StatusCode %d", resp.StatusCode)
