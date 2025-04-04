@@ -2,6 +2,15 @@ apiVersion: v1
 entries:
   lcp-exporter:
   - apiVersion: v2
+    appVersion: 1.0.2
+    created: "2025-04-04T22:47:35.872179823Z"
+    description: A Helm chart for Kubernetes to deploy lcp-exporter
+    digest: 3a8d46a2f876c5c3078c721ec98dad9af31a1fbb64f2bc29bed48b99840b0633
+    name: lcp-exporter
+    urls:
+    - https://github.com/jullianow/lcp-exporter/releases/download/lcp-exporter-1.0.2/lcp-exporter-1.0.2.tgz
+    version: 1.0.2
+  - apiVersion: v2
     appVersion: 1.0.1
     created: "2025-04-04T22:43:36.660723212Z"
     description: A Helm chart for Kubernetes to deploy lcp-exporter
@@ -10,4 +19,4 @@ entries:
     urls:
     - https://github.com/jullianow/lcp-exporter/releases/download/lcp-exporter-1.0.1/lcp-exporter-1.0.1.tgz
     version: 1.0.1
-generated: "2025-04-04T22:43:36.660727951Z"
+generated: "2025-04-04T22:47:35.872185714Z"
