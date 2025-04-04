@@ -15,6 +15,8 @@ import (
 	"github.com/jullianow/lcp-exporter/lcp"
 )
 
+var VERSION string
+
 const (
 	rootTemplate = `<!DOCTYPE html>
 <html>
@@ -22,7 +24,7 @@ const (
 	<title>LCP exporter</title>
 </head>
 <body>
-	<h2>LCP exporter</h2>
+	<h2>LCP exporter. Version: {{.VERSION}}</h2>
 	<ul>
 		<li><a href="{{.MetricsPath}}">Metrics</a></li>
 		<li><a href="/healthz">Health Check</a></li>
@@ -108,7 +110,7 @@ func main() {
 	mux.Handle("/healthz", http.HandlerFunc(handleHealthz))
 	mux.Handle(cfg.MetricsPath, promhttp.HandlerFor(registry, promhttp.HandlerOpts{}))
 
-	logrus.Infof("Starting HTTP server on Port %s, serving metrics at %s", cfg.Port, cfg.MetricsPath)
+	logrus.Infof("Starting HTTP server on Port %s, serving metrics at %s. Version: %s", cfg.Port, cfg.MetricsPath, VERSION)
 
 	logrus.Fatal(http.ListenAndServe(":"+cfg.Port, mux))
 }
