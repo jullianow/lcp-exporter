@@ -3,6 +3,7 @@ package config
 import (
 	"flag"
 	"os"
+	"time"
 
 	"github.com/sirupsen/logrus"
 )
@@ -18,20 +19,24 @@ type Config struct {
 	EnablePromHttpMetrics         bool
 	EnableClusterDiscoveryMetrics bool
 	Token                         string
+	Duration                      time.Duration
+	EnableProjectsMetrics         bool
 }
 
 func ParseFlags() *Config {
 	var cfg Config
 
-	flag.StringVar(&cfg.LogFormat, "log-format", "json", "Log format (json or text)")
-	flag.StringVar(&cfg.LogLevel, "log-level", "info", "Log level (debug, info, warn, error)")
-	flag.StringVar(&cfg.Endpoint, "endpoint", "", "Base endpoint for the REST API")
-	flag.StringVar(&cfg.Port, "port", "9103", "Port for the HTTP server")
-	flag.StringVar(&cfg.MetricsPath, "metrics-path", "/metrics", "Path for the metrics endpoint")
+	flag.BoolVar(&cfg.EnableClusterDiscoveryMetrics, "enable-cluster-discovery-metrics", true, "Enable cluster discovery metrics")
+	flag.BoolVar(&cfg.EnableProjectsMetrics, "enable-projects-metrics", true, "Enable projects metrics")
 	flag.BoolVar(&cfg.EnableGoMetrics, "enable-go-metrics", false, "Enable Go default metrics")
 	flag.BoolVar(&cfg.EnableProcessMetrics, "enable-process-metrics", false, "Enable process metrics")
 	flag.BoolVar(&cfg.EnablePromHttpMetrics, "enable-promhttp-metrics", false, "Enable promhttp metrics")
-	flag.BoolVar(&cfg.EnableClusterDiscoveryMetrics, "enable-cluster-discovery-metrics", true, "Enable cluster discovery metrics")
+	flag.DurationVar(&cfg.Duration, "duration", 0, "Duration to shift from now (e.g. 24h, -48h)")
+	flag.StringVar(&cfg.Endpoint, "endpoint", "", "Base endpoint for the REST API")
+	flag.StringVar(&cfg.LogFormat, "log-format", "json", "Log format (json or text)")
+	flag.StringVar(&cfg.LogLevel, "log-level", "info", "Log level (debug, info, warn, error)")
+	flag.StringVar(&cfg.MetricsPath, "metrics-path", "/metrics", "Path for the metrics endpoint")
+	flag.StringVar(&cfg.Port, "port", "9103", "Port for the HTTP server")
 
 	flag.Parse()
 
@@ -50,6 +55,10 @@ func ParseFlags() *Config {
 
 	if cfg.Endpoint == "" {
 		logrus.Fatal("The API endpoint must be provided with the -endpoint flag")
+	}
+
+	if cfg.Duration.Seconds() < 0 {
+		logrus.Fatalf("Invalid duration: must be non-negative, got %s", cfg.Duration.String())
 	}
 
 	level, err := logrus.ParseLevel(cfg.LogLevel)

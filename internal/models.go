@@ -12,6 +12,11 @@ type Info struct {
 	} `json:"domains"`
 }
 
+type Provider struct {
+	Name           string `json:"name"`
+	CloudProjectID string `json:"cloudProjectId"`
+}
+
 type ClusterDiscovery struct {
 	Name                 string   `json:"name"`
 	Provider             Provider `json:"provider"`
@@ -22,7 +27,19 @@ type ClusterDiscovery struct {
 	IsLXC                bool     `json:"isLXC"`
 }
 
-type Provider struct {
-	Name           string `json:"name"`
-	CloudProjectID string `json:"cloudProjectId"`
+type ProjectMetadata struct {
+	Commerce bool   `json:"commerce"`
+	Type     string `json:"type"`
+	Trial    string `json:"trial"`
+}
+
+type Projects struct {
+	Id              string          `json:"id"`
+	Cluster         string          `json:"cluster"`
+	Health          string          `json:"health"`
+	ParentProjectID string          `json:"organizationId"`
+	ProjectID       string          `json:"projectId"`
+	Status          string          `json:"status"`
+	Metadata        ProjectMetadata `json:"metadata"`
+	Type            string          `json:"type"`
 }

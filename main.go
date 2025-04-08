@@ -85,12 +85,16 @@ func main() {
 		enable    bool
 	}{
 		"cluster_discovery": {
-			collector: admin.NewclusterDiscoveryCollector(client),
+			collector: admin.NewClusterDiscoveryCollector(client),
 			enable:    cfg.EnableClusterDiscoveryMetrics,
 		},
 		"info": {
 			collector: collector.NewInfoCollector(client),
 			enable:    true,
+		},
+		"projects": {
+			collector: admin.NewProjectsCollector(client),
+			enable:    cfg.EnableProjectsMetrics,
 		},
 		"up": {
 			collector: collector.NewUpCollector(client),
