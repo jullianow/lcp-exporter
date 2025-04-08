@@ -61,7 +61,7 @@ jobs:
           git pull origin master
           IFS='.' read -r major minor patch <<< "${{ env.VERSION }}"
           new_version="${major}.${minor}.$((patch+1))-snapshot"
-          echo $new_version > VERSION.tmp && mv VERSION.tmp VERSION
+          echo "$new_version" > VERSION.tmp && mv VERSION.tmp VERSION
           git commit -am "chore: bump version to ${new_version}"
           git push origin master
       - name: Publish Helm chart
