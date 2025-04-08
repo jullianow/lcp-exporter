@@ -20,7 +20,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Extract repo name
-        run: echo "REPO_NAME=${GITHUB_REPOSITORY##*/}" >> $GITHUB_ENV
+        run: echo "REPO_NAME=${GITHUB_REPOSITORY##*/}" >> "$GITHUB_ENV"
       - name: Extract current version from VERSION
         run: echo "VERSION=$(sed -e 's,.*/\(.*\),\1,;s/-snapshot$//' VERSION)" >> "$GITHUB_ENV"
       - name: Setup
