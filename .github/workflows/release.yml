@@ -20,7 +20,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Extract repo name
-        run: echo "REPO_NAME=${GITHUB_REPOSITORY##*/}" >> $GITHUB_ENV
+        run: echo "REPO_NAME=${GITHUB_REPOSITORY##*/}" >> "$GITHUB_ENV"
       - name: Extract current version from VERSION
         run: echo "VERSION=$(sed -e 's,.*/\(.*\),\1,;s/-snapshot$//' VERSION)" >> "$GITHUB_ENV"
       - name: Setup
@@ -61,7 +61,7 @@ jobs:
           git pull origin master
           IFS='.' read -r major minor patch <<< "${{ env.VERSION }}"
           new_version="${major}.${minor}.$((patch+1))-snapshot"
-          echo $new_version > VERSION.tmp && mv VERSION.tmp VERSION
+          echo "$new_version" > VERSION.tmp && mv VERSION.tmp VERSION
           git commit -am "chore: bump version to ${new_version}"
           git push origin master
       - name: Publish Helm chart

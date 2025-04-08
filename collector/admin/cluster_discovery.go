@@ -19,7 +19,7 @@ type clusterDiscoveryCollector struct {
 	info   *prometheus.Desc
 }
 
-func NewclusterDiscoveryCollector(client *lcp.Client) *clusterDiscoveryCollector {
+func NewClusterDiscoveryCollector(client *lcp.Client) *clusterDiscoveryCollector {
 	fqName := internal.Name("cluster_discovery")
 
 	return &clusterDiscoveryCollector{

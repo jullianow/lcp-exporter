@@ -44,7 +44,7 @@ func TestClusterDiscoveryCollector(t *testing.T) {
 
 	client := lcp.NewClient(server.URL, "")
 
-	collector := NewclusterDiscoveryCollector(client)
+	collector := NewClusterDiscoveryCollector(client)
 
 	registry := prometheus.NewRegistry()
 	registry.MustRegister(collector)
