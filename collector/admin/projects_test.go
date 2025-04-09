@@ -11,11 +11,11 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/jullianow/lcp-exporter/internal"
+	"github.com/jullianow/lcp-exporter/internal/shared"
 	"github.com/jullianow/lcp-exporter/lcp"
 )
 
-var mockProjectsResponse = []internal.Projects{
+var mockProjectsResponse = []shared.Projects{
 	{
 		Id:              "proj-1",
 		Cluster:         "cluster-1",
@@ -23,7 +23,7 @@ var mockProjectsResponse = []internal.Projects{
 		ParentProjectID: "proj-1",
 		ProjectID:       "proj-1",
 		Status:          "running",
-		Metadata: internal.ProjectMetadata{
+		Metadata: shared.ProjectMetadata{
 			Commerce: true,
 			Type:     "dev",
 			Trial:    "false",
@@ -36,7 +36,7 @@ var mockProjectsResponse = []internal.Projects{
 		ParentProjectID: "org-1",
 		ProjectID:       "proj-2",
 		Status:          "stopped",
-		Metadata: internal.ProjectMetadata{
+		Metadata: shared.ProjectMetadata{
 			Commerce: false,
 			Type:     "prod",
 			Trial:    "true",

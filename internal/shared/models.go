@@ -1,4 +1,4 @@
-package internal
+package shared
 
 type HealthCheck struct {
 	Status string `json:"status"`
@@ -42,4 +42,31 @@ type Projects struct {
 	Status          string          `json:"status"`
 	Metadata        ProjectMetadata `json:"metadata"`
 	Type            string          `json:"type"`
+}
+
+type AutoscaleCost struct {
+	Amount   int    `json:"amount"`
+	Currency string `json:"currency"`
+}
+
+type AutoscaleHistory struct {
+	ProjectID                 string        `json:"projectId"`
+	Availability              string        `json:"availability"`
+	ServiceId                 string        `json:"serviceId"`
+	NumAddedInstances         int           `json:"numAddedInstances"`
+	ActiveTimePerInstanceMs   int           `json:"activeTimePerInstanceMs"`
+	ActiveTimeMs              int           `json:"activeTimeMs"`
+	BillableTimePerInstanceMs int           `json:"billableTimePerInstanceMs"`
+	BillableTimeMs            int           `json:"billableTimeMs"`
+	Cost                      AutoscaleCost `json:"cost"`
+	Price                     AutoscaleCost `json:"price"`
+}
+
+type Autoscale struct {
+	ProjectIds              []string           `json:"projectIds"`
+	IncludedChildProjectIds []string           `json:"includedChildProjectIds"`
+	CurrencyCode            string             `json:"currencyCode"`
+	TotalActiveTimeMs       string             `json:"totalActiveTimeMs"`
+	TotalBillableTimeMs     string             `json:"totalBillableTimeMs"`
+	AutoscaleHistory        []AutoscaleHistory `json:"autoscaleHistory"`
 }

@@ -94,7 +94,7 @@ func main() {
 		},
 		"projects": {
 			collector: admin.NewProjectsCollector(client),
-			enable:    cfg.EnableProjectsMetrics,
+			enable:    true,
 		},
 		"up": {
 			collector: collector.NewUpCollector(client),

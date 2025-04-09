@@ -8,6 +8,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/jullianow/lcp-exporter/internal"
+	"github.com/jullianow/lcp-exporter/internal/shared"
 	"github.com/jullianow/lcp-exporter/lcp"
 )
 
@@ -52,7 +53,7 @@ func (c *upCollector) collectMetrics(ch chan<- prometheus.Metric) {
 		}
 	}()
 
-	var responseData internal.HealthCheck
+	var responseData shared.HealthCheck
 	if err := json.NewDecoder(resp.Body).Decode(&responseData); err != nil {
 		logrus.Errorf("Error decoding health check response: %v", err)
 		return

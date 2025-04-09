@@ -11,14 +11,14 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/jullianow/lcp-exporter/internal"
+	"github.com/jullianow/lcp-exporter/internal/shared"
 	"github.com/jullianow/lcp-exporter/lcp"
 )
 
-var mockClusterDiscoveryResponse = map[string]internal.ClusterDiscovery{
+var mockClusterDiscoveryResponse = map[string]shared.ClusterDiscovery{
 	"cluster-1": {
 		Name: "cluster-1",
-		Provider: internal.Provider{
+		Provider: shared.Provider{
 			Name:           "gcp",
 			CloudProjectID: "project-123",
 		},

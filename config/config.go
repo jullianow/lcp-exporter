@@ -9,25 +9,26 @@ import (
 )
 
 type Config struct {
-	LogFormat                     string
-	LogLevel                      string
-	Endpoint                      string
-	Port                          string
-	MetricsPath                   string
+	Duration                      time.Duration
+	EnableClusterDiscoveryMetrics bool
 	EnableGoMetrics               bool
 	EnableProcessMetrics          bool
-	EnablePromHttpMetrics         bool
-	EnableClusterDiscoveryMetrics bool
-	Token                         string
-	Duration                      time.Duration
 	EnableProjectsMetrics         bool
+	EnablePromHttpMetrics         bool
+	EnableAutoscaleMetrics        bool
+	Endpoint                      string
+	LogFormat                     string
+	LogLevel                      string
+	MetricsPath                   string
+	Port                          string
+	Token                         string
 }
 
 func ParseFlags() *Config {
 	var cfg Config
 
 	flag.BoolVar(&cfg.EnableClusterDiscoveryMetrics, "enable-cluster-discovery-metrics", true, "Enable cluster discovery metrics")
-	flag.BoolVar(&cfg.EnableProjectsMetrics, "enable-projects-metrics", true, "Enable projects metrics")
+	flag.BoolVar(&cfg.EnableAutoscaleMetrics, "enable-autoscale-metrics", true, "Enable autoscale metrics")
 	flag.BoolVar(&cfg.EnableGoMetrics, "enable-go-metrics", false, "Enable Go default metrics")
 	flag.BoolVar(&cfg.EnableProcessMetrics, "enable-process-metrics", false, "Enable process metrics")
 	flag.BoolVar(&cfg.EnablePromHttpMetrics, "enable-promhttp-metrics", false, "Enable promhttp metrics")
