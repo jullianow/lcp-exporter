@@ -18,6 +18,7 @@ type projectsCollector struct {
 	client *lcp.Client
 	count  *prometheus.Desc
 	info   *prometheus.Desc
+	age    *prometheus.Desc
 }
 
 func NewProjectsCollector(client *lcp.Client) *projectsCollector {
@@ -34,6 +35,12 @@ func NewProjectsCollector(client *lcp.Client) *projectsCollector {
 			fqName("info"),
 			"Information about projects. 1 if the project is running, 0 otherwise",
 			[]string{"commerce", "health", "id", "name", "parent_project_id", "root_project", "trial", "type"},
+			nil,
+		),
+		age: prometheus.NewDesc(
+			fqName("age"),
+			"Information about projects. 1 if the project is running, 0 otherwise",
+			[]string{"id"},
 			nil,
 		),
 	}
@@ -117,10 +124,18 @@ func (c *projectsCollector) collectMetrics(ch chan<- prometheus.Metric) {
 			project.Metadata.Trial,
 			project.Metadata.Type,
 		)
+
+		ch <- prometheus.MustNewConstMetric(
+			c.age,
+			prometheus.GaugeValue,
+			float64(project.CreatedAt),
+			project.Id,
+		)
 	}
 }
 
 func (c *projectsCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- c.count
 	ch <- c.info
+	ch <- c.age
 }

@@ -42,6 +42,7 @@ type Projects struct {
 	Status          string          `json:"status"`
 	Metadata        ProjectMetadata `json:"metadata"`
 	Type            string          `json:"type"`
+	CreatedAt       int             `json:"createdAt"`
 }
 
 type AutoscaleCost struct {
