@@ -7,8 +7,8 @@ type HealthCheck struct {
 type Info struct {
 	Version string `json:"version"`
 	Domains struct {
-		Infa    string `json:"infrastructure"`
-		Service string `json:"service"`
+		Infrastructure string `json:"infrastructure"`
+		Service        string `json:"service"`
 	} `json:"domains"`
 }
 
@@ -22,7 +22,6 @@ type ClusterDiscovery struct {
 	Provider             Provider `json:"provider"`
 	Location             string   `json:"location"`
 	CustomerBackupBucket string   `json:"customerBackupBucket"`
-	Zones                []string `json:"zones"`
 	PlanID               string   `json:"planId"`
 	IsLXC                bool     `json:"isLXC"`
 }

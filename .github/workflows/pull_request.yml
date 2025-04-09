@@ -48,6 +48,7 @@ jobs:
           VALIDATE_MARKDOWN_PRETTIER: false
           VALIDATE_SHELL_SHFMT: false
           VALIDATE_YAML_PRETTIER: false
+          VALIDATE_NATURAL_LANGUAGE: false
           FILTER_REGEX_EXCLUDE: 'chart/lcp-exporter/templates/.*'
   docker-build:
     needs:

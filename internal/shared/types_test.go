@@ -18,16 +18,16 @@ func TestInfo(t *testing.T) {
 	info := Info{
 		Version: "v1.0.0",
 		Domains: struct {
-			Infa    string `json:"infrastructure"`
-			Service string `json:"service"`
+			Infrastructure string `json:"infrastructure"`
+			Service        string `json:"service"`
 		}{
-			Infa:    "infrastructure.com",
-			Service: "service.com",
+			Infrastructure: "infrastructure.com",
+			Service:        "service.com",
 		},
 	}
 
 	assert.Equal(t, "v1.0.0", info.Version)
-	assert.Equal(t, "infrastructure.com", info.Domains.Infa)
+	assert.Equal(t, "infrastructure.com", info.Domains.Infrastructure)
 	assert.Equal(t, "service.com", info.Domains.Service)
 }
 
@@ -37,7 +37,6 @@ func TestClusterDiscovery(t *testing.T) {
 		Provider:             Provider{Name: "gcp", CloudProjectID: "project-123"},
 		Location:             "us-central1",
 		CustomerBackupBucket: "backup-bucket",
-		Zones:                []string{"zone-a", "zone-b"},
 		PlanID:               "plan-xyz",
 		IsLXC:                true,
 	}
@@ -47,7 +46,6 @@ func TestClusterDiscovery(t *testing.T) {
 	assert.Equal(t, "project-123", cluster.Provider.CloudProjectID)
 	assert.Equal(t, "us-central1", cluster.Location)
 	assert.Equal(t, "backup-bucket", cluster.CustomerBackupBucket)
-	assert.Equal(t, []string{"zone-a", "zone-b"}, cluster.Zones)
 	assert.Equal(t, "plan-xyz", cluster.PlanID)
 	assert.True(t, cluster.IsLXC)
 }

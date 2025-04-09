@@ -1,11 +1,9 @@
 package collector
 
 import (
-	"encoding/json"
 	"sync"
 
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/sirupsen/logrus"
 
 	"github.com/jullianow/lcp-exporter/internal"
 	"github.com/jullianow/lcp-exporter/internal/shared"
@@ -42,36 +40,29 @@ func (c *upCollector) Collect(ch chan<- prometheus.Metric) {
 }
 
 func (c *upCollector) collectMetrics(ch chan<- prometheus.Metric) {
-	resp, err := c.client.MakeRequest("/health-check")
+	health, err := lcp.FetchFrom[shared.HealthCheck](c.client, "/health-check")
 	if err != nil {
-		logrus.Errorf("Error collecting health check data: %v", err)
+		internal.LogError("UpCollector", "Failed to fetch health check: %v", err)
 		return
 	}
-	defer func() {
-		if err := resp.Body.Close(); err != nil {
-			logrus.Warnf("Error closing response body: %v", err)
-		}
-	}()
-
-	var responseData shared.HealthCheck
-	if err := json.NewDecoder(resp.Body).Decode(&responseData); err != nil {
-		logrus.Errorf("Error decoding health check response: %v", err)
+	if len(health) == 0 {
+		internal.LogWarn("UpCollector", "No health check data returned")
 		return
 	}
 
-	// Emite o valor da métrica
-	var metricValue float64
-	if responseData.Status == "up" {
-		metricValue = 1
+	status := health[0].Status
+	var value float64
+	if status == "up" {
+		value = 1
 	} else {
-		metricValue = 0
+		value = 0
 	}
 
 	ch <- prometheus.MustNewConstMetric(
 		c.up,
 		prometheus.GaugeValue,
-		metricValue,
-		responseData.Status,
+		value,
+		status,
 	)
 }
 

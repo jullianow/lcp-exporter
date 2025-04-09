@@ -1,7 +1,7 @@
 package admin
 
 import (
-	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -9,52 +9,59 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
-	"github.com/jullianow/lcp-exporter/internal/shared"
 	"github.com/jullianow/lcp-exporter/lcp"
 )
 
-var mockClusterDiscoveryResponse = map[string]shared.ClusterDiscovery{
-	"cluster-1": {
-		Name: "cluster-1",
-		Provider: shared.Provider{
-			Name:           "gcp",
-			CloudProjectID: "project-123",
-		},
-		Location:             "us-central1",
-		CustomerBackupBucket: "backup-bucket",
-		Zones:                []string{"zone-a", "zone-b"},
-		PlanID:               "plan-xyz",
-		IsLXC:                true,
-	},
-}
-
 func TestClusterDiscoveryCollector(t *testing.T) {
+	mockJSON := `{
+		"123": {
+			"name": "cluster-1",
+			"provider": {
+				"name": "gcp",
+				"cloudProjectId": "project-123"
+			},
+			"customerBackupBucket": "gs://my-backup-bucket",
+			"location": "us-central1",
+			"planId": "plan-xyz",
+			"isLXC": true
+		}
+	}`
+
+	// Servidor de teste simulando a API LCP
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		assert.Equal(t, "/admin/cluster-discovery/discovered-clusters", r.URL.Path)
-
-		w.Header().Set("Content-Type", "application/json")
-
-		response, _ := json.Marshal(mockClusterDiscoveryResponse)
-		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write(response)
+		require.Equal(t, "/admin/cluster-discovery/discovered-clusters", r.URL.Path)
+		_, err := fmt.Fprintln(w, mockJSON)
+		require.NoError(t, err)
 	}))
 	defer server.Close()
 
-	client := lcp.NewClient(server.URL, "")
-
+	// Cria o client apontando para o servidor fake
+	client := lcp.NewClient(server.URL, "fake-token")
 	collector := NewClusterDiscoveryCollector(client)
 
-	registry := prometheus.NewRegistry()
-	registry.MustRegister(collector)
+	// Registra o coletor em um registry isolado
+	reg := prometheus.NewRegistry()
+	require.NoError(t, reg.Register(collector))
 
-	recorder := httptest.NewRecorder()
-	handler := promhttp.HandlerFor(registry, promhttp.HandlerOpts{})
-	handler.ServeHTTP(recorder, httptest.NewRequest("GET", "/metrics", nil))
+	// Expõe as métricas e captura a saída
+	serverMetrics := httptest.NewServer(promhttp.HandlerFor(reg, promhttp.HandlerOpts{}))
+	defer serverMetrics.Close()
 
-	body, _ := io.ReadAll(recorder.Body)
-	metricsOutput := string(body)
-	assert.Contains(t, metricsOutput, "lcp_api_cluster_discovery_info{cloud_project_id=\"project-123\",is_lxc=\"true\",location=\"us-central1\",name=\"cluster-1\",plan_id=\"plan-xyz\",provider=\"gcp\"} 1")
-	assert.Contains(t, metricsOutput, "lcp_api_cluster_discovery_total 1")
+	// Chamada real ao endpoint de métricas
+	resp, err := http.Get(serverMetrics.URL)
+	require.NoError(t, err)
+	defer func() {
+		closeErr := resp.Body.Close()
+		require.NoError(t, closeErr)
+	}()
+
+	body, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
+
+	output := string(body)
+
+	require.Contains(t, output, `lcp_api_cluster_discovery_total 1`)
+	require.Contains(t, output, `lcp_api_cluster_discovery_info{cloud_project_id="project-123",is_lxc="true",location="us-central1",name="cluster-1",plan_id="plan-xyz",provider="gcp"} 1`)
 }

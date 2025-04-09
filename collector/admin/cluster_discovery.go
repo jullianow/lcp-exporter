@@ -1,13 +1,9 @@
 package admin
 
 import (
-	"encoding/json"
-	"io"
-	"net/http"
 	"sync"
 
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/sirupsen/logrus"
 
 	"github.com/jullianow/lcp-exporter/internal"
 	"github.com/jullianow/lcp-exporter/internal/shared"
@@ -40,7 +36,6 @@ func NewClusterDiscoveryCollector(client *lcp.Client) *clusterDiscoveryCollector
 }
 
 func (c *clusterDiscoveryCollector) Collect(ch chan<- prometheus.Metric) {
-
 	var wg sync.WaitGroup
 	wg.Add(1)
 	go func() {
@@ -51,32 +46,9 @@ func (c *clusterDiscoveryCollector) Collect(ch chan<- prometheus.Metric) {
 }
 
 func (c *clusterDiscoveryCollector) collectMetrics(ch chan<- prometheus.Metric) {
-	resp, err := c.client.MakeRequest("/admin/cluster-discovery/discovered-clusters")
+	clusters, err := lcp.FetchFrom[shared.ClusterDiscovery](c.client, "/admin/cluster-discovery/discovered-clusters")
 	if err != nil {
-		logrus.Errorf("Error collecting cluster discovery data: %v", err)
-		return
-	}
-
-	defer func() {
-		if err := resp.Body.Close(); err != nil {
-			logrus.Warnf("Error closing response body: %v", err)
-		}
-	}()
-
-	if resp.StatusCode != http.StatusOK {
-		logrus.Errorf("Error accessing cluster discovery API: StatusCode %d", resp.StatusCode)
-		return
-	}
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		logrus.Errorf("Error reading cluster discovery response: %v", err)
-		return
-	}
-
-	var clusters map[string]shared.ClusterDiscovery
-	if err := json.Unmarshal(body, &clusters); err != nil {
-		logrus.Errorf("Error decoding cluster discovery JSON: %v", err)
+		internal.LogError("ClusterDiscoveryCollector", "Failed to fetch discovered clusters: %v", err)
 		return
 	}
 

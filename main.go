@@ -7,11 +7,11 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/collectors"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"github.com/sirupsen/logrus"
 
 	"github.com/jullianow/lcp-exporter/collector"
 	"github.com/jullianow/lcp-exporter/collector/admin"
 	"github.com/jullianow/lcp-exporter/config"
+	"github.com/jullianow/lcp-exporter/internal"
 	"github.com/jullianow/lcp-exporter/lcp"
 )
 
@@ -37,7 +37,7 @@ func handleHealthz(w http.ResponseWriter, _ *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	if _, err := w.Write([]byte("ok")); err != nil {
 		msg := "error writing healthz handler"
-		logrus.Errorf("[handleHealthz] %s: %v", msg, err)
+		internal.LogError("handleHealthz", "%s: %v", msg, err)
 	}
 }
 
@@ -51,7 +51,7 @@ func handleRoot(w http.ResponseWriter, _ *http.Request) {
 
 	if err := tmpl.Execute(w, data); err != nil {
 		msg := "error rendering root template"
-		logrus.Errorf("[handleRoot] %s: %v", msg, err)
+		internal.LogError("handleRoot", "%s: %v", msg, err)
 		http.Error(w, msg, http.StatusInternalServerError)
 		return
 	}
@@ -65,46 +65,59 @@ func main() {
 	registry := prometheus.NewRegistry()
 
 	if !cfg.EnableGoMetrics {
-		logrus.Info("Disabling Go default metrics")
+		internal.LogInfo("Main", "Disabling Go default metrics")
 		prometheus.Unregister(collectors.NewGoCollector())
 	}
 
 	if !cfg.EnableProcessMetrics {
-		logrus.Info("Disabling process metrics")
+		internal.LogInfo("Main", "Disabling process metrics")
 		prometheus.Unregister(collectors.NewProcessCollector(collectors.ProcessCollectorOpts{}))
 	}
 
 	if !cfg.EnablePromHttpMetrics {
-		logrus.Info("Disabling promhttp metrics")
+		internal.LogInfo("Main", "Disabling promhttp metrics")
 	} else {
 		http.Handle(cfg.MetricsPath, promhttp.HandlerFor(registry, promhttp.HandlerOpts{}))
 	}
 
-	collectorConfigs := map[string]struct {
+	projectsCollector := admin.NewProjectsCollector(client)
+	projectsCollector.FetchInitial()
+
+	collectorConfigs := []struct {
+		name      string
 		collector prometheus.Collector
 		enable    bool
 	}{
-		"cluster_discovery": {
+		{
+			name:      "projects",
+			collector: projectsCollector,
+			enable:    true,
+		},
+		{
+			name:      "autoscale",
+			collector: admin.NewAutoscaleCollector(client, projectsCollector),
+			enable:    true,
+		},
+		{
+			name:      "cluster_discovery",
 			collector: admin.NewClusterDiscoveryCollector(client),
 			enable:    cfg.EnableClusterDiscoveryMetrics,
 		},
-		"info": {
+		{
+			name:      "info",
 			collector: collector.NewInfoCollector(client),
 			enable:    true,
 		},
-		"projects": {
-			collector: admin.NewProjectsCollector(client),
-			enable:    true,
-		},
-		"up": {
+		{
+			name:      "up",
 			collector: collector.NewUpCollector(client),
 			enable:    true,
 		},
 	}
 
-	for name, config := range collectorConfigs {
+	for _, config := range collectorConfigs {
 		if config.enable {
-			logrus.Infof("Registering collector: %s", name)
+			internal.LogInfo("Main", "Registering collector: %s", config.name)
 			registry.MustRegister(config.collector)
 		}
 	}
@@ -114,7 +127,7 @@ func main() {
 	mux.Handle("/healthz", http.HandlerFunc(handleHealthz))
 	mux.Handle(cfg.MetricsPath, promhttp.HandlerFor(registry, promhttp.HandlerOpts{}))
 
-	logrus.Infof("Starting HTTP server on Port %s, serving metrics at %s. Version: %s", cfg.Port, cfg.MetricsPath, VERSION)
+	internal.LogInfo("Main", "Starting HTTP server on Port %s, serving metrics at %s. Version: %s", cfg.Port, cfg.MetricsPath, VERSION)
 
-	logrus.Fatal(http.ListenAndServe(":"+cfg.Port, mux))
+	internal.LogFatal("Main", "%s", http.ListenAndServe(":"+cfg.Port, mux))
 }
