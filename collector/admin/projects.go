@@ -1,30 +1,33 @@
 package admin
 
 import (
-	"encoding/json"
-	"io"
-	"net/http"
 	"sync"
 
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/sirupsen/logrus"
 
 	"github.com/jullianow/lcp-exporter/internal"
 	"github.com/jullianow/lcp-exporter/internal/shared"
 	"github.com/jullianow/lcp-exporter/lcp"
 )
 
-type projectsCollector struct {
-	client *lcp.Client
-	count  *prometheus.Desc
-	info   *prometheus.Desc
-	age    *prometheus.Desc
+type ProjectProvider interface {
+	GetProjects() []shared.Projects
 }
 
-func NewProjectsCollector(client *lcp.Client) *projectsCollector {
+type ProjectsCollector struct {
+	client   *lcp.Client
+	projects []shared.Projects
+	mu       sync.RWMutex
+
+	count *prometheus.Desc
+	info  *prometheus.Desc
+	age   *prometheus.Desc
+}
+
+func NewProjectsCollector(client *lcp.Client) *ProjectsCollector {
 	fqName := internal.Name("projects")
 
-	return &projectsCollector{
+	return &ProjectsCollector{
 		client: client,
 		count: prometheus.NewDesc(
 			fqName("count"),
@@ -46,87 +49,74 @@ func NewProjectsCollector(client *lcp.Client) *projectsCollector {
 	}
 }
 
-func (c *projectsCollector) Collect(ch chan<- prometheus.Metric) {
-
-	var wg sync.WaitGroup
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		c.collectMetrics(ch)
-	}()
-	wg.Wait()
+func (pc *ProjectsCollector) GetProjects() []shared.Projects {
+	pc.mu.RLock()
+	defer pc.mu.RUnlock()
+	return pc.projects
 }
 
-func (c *projectsCollector) collectMetrics(ch chan<- prometheus.Metric) {
-	resp, err := c.client.MakeRequest("/admin/projects")
+func (pc *ProjectsCollector) FetchInitial() {
+	projects := pc.fetch()
+	if len(projects) == 0 {
+		internal.LogWarn("ProjectsCollector", "Initial fetch returned 0 projects")
+	}
+
+	pc.mu.Lock()
+	pc.projects = projects
+	pc.mu.Unlock()
+}
+
+func (pc *ProjectsCollector) fetch() []shared.Projects {
+	projects, err := lcp.FetchFrom[shared.Projects](pc.client, "/admin/projects")
 	if err != nil {
-		logrus.Errorf("Error collecting projects data: %v", err)
-		return
+		internal.LogError("ProjectsCollector", "Failed to fetch projects: %v", err)
+		return nil
 	}
+	return projects
+}
 
-	defer func() {
-		if err := resp.Body.Close(); err != nil {
-			logrus.Warnf("Error closing response body: %v", err)
-		}
-	}()
+func (pc *ProjectsCollector) Collect(ch chan<- prometheus.Metric) {
+	projects := pc.fetch()
 
-	if resp.StatusCode != http.StatusOK {
-		logrus.Errorf("Error accessing projects API: StatusCode %d", resp.StatusCode)
-		return
-	}
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		logrus.Errorf("Error reading projects response: %v", err)
-		return
-	}
-
-	var projects []shared.Projects
-	if err := json.Unmarshal(body, &projects); err != nil {
-		logrus.Errorf("Error decoding cluster discovery JSON: %v", err)
-		return
-	}
+	pc.mu.Lock()
+	pc.projects = projects
+	pc.mu.Unlock()
 
 	ch <- prometheus.MustNewConstMetric(
-		c.count,
+		pc.count,
 		prometheus.GaugeValue,
 		float64(len(projects)),
 	)
 
 	for _, project := range projects {
-		var status = 0.0
+		var status float64
 		if project.Status == "running" {
-			status = 1.0
+			status = 1
 		}
 
-		var health = false
-		if project.Health == "healthy" {
-			health = true
-		}
-
-		var parent_project_id = project.ParentProjectID
-		var root_project = false
-		if project.ProjectID == project.ParentProjectID {
-			parent_project_id = ""
-			root_project = true
+		health := project.Health == "healthy"
+		rootProject := project.ProjectID == project.ParentProjectID
+		parentID := project.ParentProjectID
+		if rootProject {
+			parentID = ""
 		}
 
 		ch <- prometheus.MustNewConstMetric(
-			c.info,
+			pc.info,
 			prometheus.GaugeValue,
 			status,
 			internal.BoolToString(project.Metadata.Commerce),
 			internal.BoolToString(health),
 			project.Id,
 			project.ProjectID,
-			parent_project_id,
-			internal.BoolToString(root_project),
+			parentID,
+			internal.BoolToString(rootProject),
 			project.Metadata.Trial,
 			project.Metadata.Type,
 		)
 
 		ch <- prometheus.MustNewConstMetric(
-			c.age,
+			pc.age,
 			prometheus.GaugeValue,
 			float64(project.CreatedAt),
 			project.Id,
@@ -134,7 +124,7 @@ func (c *projectsCollector) collectMetrics(ch chan<- prometheus.Metric) {
 	}
 }
 
-func (c *projectsCollector) Describe(ch chan<- *prometheus.Desc) {
+func (c *ProjectsCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- c.count
 	ch <- c.info
 	ch <- c.age

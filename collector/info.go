@@ -1,11 +1,9 @@
 package collector
 
 import (
-	"encoding/json"
 	"sync"
 
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/sirupsen/logrus"
 
 	"github.com/jullianow/lcp-exporter/internal"
 	"github.com/jullianow/lcp-exporter/internal/shared"
@@ -42,30 +40,24 @@ func (c *infoCollector) Collect(ch chan<- prometheus.Metric) {
 }
 
 func (c *infoCollector) collectMetrics(ch chan<- prometheus.Metric) {
-	resp, err := c.client.MakeRequest("/")
+	info, err := lcp.FetchFrom[shared.Info](c.client, "/")
 	if err != nil {
-		logrus.Errorf("Error collecting health check data: %v", err)
+		internal.LogError("InfoCollector", "Failed to fetch status info: %v", err)
 		return
 	}
-	defer func() {
-		if err := resp.Body.Close(); err != nil {
-			logrus.Warnf("Error closing response body: %v", err)
-		}
-	}()
-
-	var responseData shared.Info
-	if err := json.NewDecoder(resp.Body).Decode(&responseData); err != nil {
-		logrus.Errorf("Error decoding health check response: %v", err)
+	if len(info) == 0 {
+		internal.LogWarn("InfoCollector", "No status info returned from API")
 		return
 	}
 
+	data := info[0]
 	ch <- prometheus.MustNewConstMetric(
 		c.info,
 		prometheus.GaugeValue,
 		1,
-		responseData.Version,
-		responseData.Domains.Infa,
-		responseData.Domains.Service,
+		data.Version,
+		data.Domains.Infrastructure,
+		data.Domains.Service,
 	)
 }
 

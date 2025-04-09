@@ -5,6 +5,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/jullianow/lcp-exporter/internal"
 	"github.com/sirupsen/logrus"
 )
 
@@ -51,20 +52,20 @@ func ParseFlags() *Config {
 	cfg.Token = os.Getenv("LCP_API_TOKEN")
 
 	if cfg.Token == "" {
-		logrus.Fatal("Authentication error: Provide either LCP_API_TOKEN")
+		internal.LogFatal("Config", "Authentication error: Provide either LCP_API_TOKEN")
 	}
 
 	if cfg.Endpoint == "" {
-		logrus.Fatal("The API endpoint must be provided with the -endpoint flag")
+		internal.LogFatal("Config", "The API endpoint must be provided with the -endpoint flag")
 	}
 
 	if cfg.Duration.Seconds() < 0 {
-		logrus.Fatalf("Invalid duration: must be non-negative, got %s", cfg.Duration.String())
+		internal.LogFatal("Config", "Invalid duration: must be non-negative, got %s", cfg.Duration.String())
 	}
 
 	level, err := logrus.ParseLevel(cfg.LogLevel)
 	if err != nil {
-		logrus.Fatalf("Invalid log level: %v", err)
+		internal.LogFatal("Config", "Invalid log level: %v", err)
 	}
 	logrus.SetLevel(level)
 
