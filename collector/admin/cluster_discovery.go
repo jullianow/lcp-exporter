@@ -10,6 +10,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/jullianow/lcp-exporter/internal"
+	"github.com/jullianow/lcp-exporter/internal/shared"
 	"github.com/jullianow/lcp-exporter/lcp"
 )
 
@@ -73,7 +74,7 @@ func (c *clusterDiscoveryCollector) collectMetrics(ch chan<- prometheus.Metric) 
 		return
 	}
 
-	var clusters map[string]internal.ClusterDiscovery
+	var clusters map[string]shared.ClusterDiscovery
 	if err := json.Unmarshal(body, &clusters); err != nil {
 		logrus.Errorf("Error decoding cluster discovery JSON: %v", err)
 		return

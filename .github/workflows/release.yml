@@ -67,6 +67,7 @@ jobs:
       - name: Publish Helm chart
         uses: helm/chart-releaser-action@v1.7.0
         env:
+          CR_GENERATE_RELEASE_NOTES: true
           CR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           charts_dir: chart
