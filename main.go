@@ -80,6 +80,7 @@ func main() {
 		http.Handle(cfg.MetricsPath, promhttp.HandlerFor(registry, promhttp.HandlerOpts{}))
 	}
 
+	dataRange := internal.CalculateDates(cfg.Duration)
 	projectsCollector := admin.NewProjectsCollector(client)
 	projectsCollector.FetchInitial()
 
@@ -95,7 +96,7 @@ func main() {
 		},
 		{
 			name:      "autoscale",
-			collector: admin.NewAutoscaleCollector(client, projectsCollector),
+			collector: admin.NewAutoscaleCollector(client, projectsCollector, dataRange),
 			enable:    true,
 		},
 		{

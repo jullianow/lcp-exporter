@@ -40,7 +40,7 @@ func (c *upCollector) Collect(ch chan<- prometheus.Metric) {
 }
 
 func (c *upCollector) collectMetrics(ch chan<- prometheus.Metric) {
-	health, err := lcp.FetchFrom[shared.HealthCheck](c.client, "/health-check")
+	health, err := lcp.FetchFrom[shared.HealthCheck](c.client, "/health-check", nil)
 	if err != nil {
 		internal.LogError("UpCollector", "Failed to fetch health check: %v", err)
 		return

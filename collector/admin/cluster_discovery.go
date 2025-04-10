@@ -22,7 +22,7 @@ func NewClusterDiscoveryCollector(client *lcp.Client) *clusterDiscoveryCollector
 	return &clusterDiscoveryCollector{
 		client: client,
 		count: prometheus.NewDesc(
-			fqName("total"),
+			fqName("count"),
 			"Total number of discovered clusters",
 			nil, nil,
 		),
@@ -46,7 +46,7 @@ func (c *clusterDiscoveryCollector) Collect(ch chan<- prometheus.Metric) {
 }
 
 func (c *clusterDiscoveryCollector) collectMetrics(ch chan<- prometheus.Metric) {
-	clusters, err := lcp.FetchFrom[shared.ClusterDiscovery](c.client, "/admin/cluster-discovery/discovered-clusters")
+	clusters, err := lcp.FetchFrom[shared.ClusterDiscovery](c.client, "/admin/cluster-discovery/discovered-clusters", nil)
 	if err != nil {
 		internal.LogError("ClusterDiscoveryCollector", "Failed to fetch discovered clusters: %v", err)
 		return

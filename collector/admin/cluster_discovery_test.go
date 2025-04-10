@@ -62,6 +62,6 @@ func TestClusterDiscoveryCollector(t *testing.T) {
 
 	output := string(body)
 
-	require.Contains(t, output, `lcp_api_cluster_discovery_total 1`)
+	require.Contains(t, output, `lcp_api_cluster_discovery_count 1`)
 	require.Contains(t, output, `lcp_api_cluster_discovery_info{cloud_project_id="project-123",is_lxc="true",location="us-central1",name="cluster-1",plan_id="plan-xyz",provider="gcp"} 1`)
 }

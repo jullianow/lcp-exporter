@@ -1,5 +1,10 @@
 package shared
 
+type DateRange struct {
+	From string
+	End  string
+}
+
 type HealthCheck struct {
 	Status string `json:"status"`
 }
@@ -45,28 +50,38 @@ type Projects struct {
 }
 
 type AutoscaleCost struct {
-	Amount   int    `json:"amount"`
-	Currency string `json:"currency"`
+	Amount   float64 `json:"amount"`
+	Currency string  `json:"currency"`
 }
 
 type AutoscaleHistory struct {
 	ProjectID                 string        `json:"projectId"`
 	Availability              string        `json:"availability"`
-	ServiceId                 string        `json:"serviceId"`
+	ServiceID                 string        `json:"serviceId"`
 	NumAddedInstances         int           `json:"numAddedInstances"`
-	ActiveTimePerInstanceMs   int           `json:"activeTimePerInstanceMs"`
-	ActiveTimeMs              int           `json:"activeTimeMs"`
-	BillableTimePerInstanceMs int           `json:"billableTimePerInstanceMs"`
-	BillableTimeMs            int           `json:"billableTimeMs"`
+	ActiveTimePerInstanceMs   int64         `json:"activeTimePerInstanceMs"`
+	ActiveTimeMs              int64         `json:"activeTimeMs"`
+	BillableTimePerInstanceMs int64         `json:"billableTimePerInstanceMs"`
+	BillableTimeMs            int64         `json:"billableTimeMs"`
 	Cost                      AutoscaleCost `json:"cost"`
 	Price                     AutoscaleCost `json:"price"`
 }
 
 type Autoscale struct {
-	ProjectIds              []string           `json:"projectIds"`
-	IncludedChildProjectIds []string           `json:"includedChildProjectIds"`
-	CurrencyCode            string             `json:"currencyCode"`
-	TotalActiveTimeMs       string             `json:"totalActiveTimeMs"`
-	TotalBillableTimeMs     string             `json:"totalBillableTimeMs"`
 	AutoscaleHistory        []AutoscaleHistory `json:"autoscaleHistory"`
+	CurrencyCode            string             `json:"currencyCode"`
+	IncludedChildProjectIds []string           `json:"includedChildProjectIds"`
+	NumActiveChildProjects  int                `json:"numActiveChildProjects"`
+	ProjectIds              []string           `json:"projectIds"`
+	TotalActiveTimeMs       int64              `json:"totalActiveTimeMs"`
+	TotalBillableTimeMs     int64              `json:"totalBillableTimeMs"`
+}
+
+type AutoscaleOverview struct {
+	CurrencyCode           string  `json:"currencyCode"`
+	NumActiveChildProjects int     `json:"numActiveChildProjects"`
+	ParentProjectID        string  `json:"parentProjectId"`
+	TotalActiveTimeMs      int64   `json:"totalActiveTimeMs"`
+	TotalBillableTimeMs    int64   `json:"totalBillableTimeMs"`
+	TotalCost              float64 `json:"totalCost"`
 }

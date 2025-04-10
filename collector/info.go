@@ -40,7 +40,7 @@ func (c *infoCollector) Collect(ch chan<- prometheus.Metric) {
 }
 
 func (c *infoCollector) collectMetrics(ch chan<- prometheus.Metric) {
-	info, err := lcp.FetchFrom[shared.Info](c.client, "/")
+	info, err := lcp.FetchFrom[shared.Info](c.client, "/", nil)
 	if err != nil {
 		internal.LogError("InfoCollector", "Failed to fetch status info: %v", err)
 		return

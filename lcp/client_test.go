@@ -23,7 +23,7 @@ func TestFetchFrom_Slice(t *testing.T) {
 	defer server.Close()
 
 	client := NewClient(server.URL, "dummy-token")
-	result, err := FetchFrom[TestData](client, "/")
+	result, err := FetchFrom[TestData](client, "/", nil)
 	require.NoError(t, err)
 	require.Len(t, result, 2)
 	require.Equal(t, "foo", result[0].Name)
@@ -38,7 +38,7 @@ func TestFetchFrom_Map(t *testing.T) {
 	defer server.Close()
 
 	client := NewClient(server.URL, "dummy-token")
-	result, err := FetchFrom[TestData](client, "/map")
+	result, err := FetchFrom[TestData](client, "/map", nil)
 	require.NoError(t, err)
 	require.Len(t, result, 1)
 	require.Equal(t, "baz", result[0].Name)
@@ -53,7 +53,7 @@ func TestFetchFrom_SingleObject(t *testing.T) {
 	defer server.Close()
 
 	client := NewClient(server.URL, "dummy-token")
-	result, err := FetchFrom[TestData](client, "/single")
+	result, err := FetchFrom[TestData](client, "/single", nil)
 	require.NoError(t, err)
 	require.Len(t, result, 1)
 	require.Equal(t, "solo", result[0].Name)
@@ -68,7 +68,7 @@ func TestFetchFrom_EnvelopeWithDataSlice(t *testing.T) {
 	defer server.Close()
 
 	client := NewClient(server.URL, "dummy-token")
-	result, err := FetchFrom[TestData](client, "/envelope-slice")
+	result, err := FetchFrom[TestData](client, "/envelope-slice", nil)
 	require.NoError(t, err)
 	require.Len(t, result, 1)
 	require.Equal(t, "env", result[0].Name)
@@ -83,7 +83,7 @@ func TestFetchFrom_EnvelopeWithDataMap(t *testing.T) {
 	defer server.Close()
 
 	client := NewClient(server.URL, "dummy-token")
-	result, err := FetchFrom[TestData](client, "/envelope-map")
+	result, err := FetchFrom[TestData](client, "/envelope-map", nil)
 	require.NoError(t, err)
 	require.Len(t, result, 1)
 	require.Equal(t, "mapped", result[0].Name)
@@ -98,7 +98,7 @@ func TestFetchFrom_EnvelopeWithErrorStatus(t *testing.T) {
 	defer server.Close()
 
 	client := NewClient(server.URL, "dummy-token")
-	_, err := FetchFrom[TestData](client, "/error-envelope")
+	_, err := FetchFrom[TestData](client, "/error-envelope", nil)
 	require.Error(t, err)
 }
 
@@ -111,7 +111,7 @@ func TestFetchFrom_InvalidJSON(t *testing.T) {
 	defer server.Close()
 
 	client := NewClient(server.URL, "dummy-token")
-	_, err := FetchFrom[TestData](client, "/invalid-json")
+	_, err := FetchFrom[TestData](client, "/invalid-json", nil)
 	require.Error(t, err)
 }
 
@@ -125,7 +125,7 @@ func TestFetchFrom_APIErrorStatus(t *testing.T) {
 	defer server.Close()
 
 	client := NewClient(server.URL, "dummy-token")
-	_, err := FetchFrom[TestData](client, "/forbidden")
+	_, err := FetchFrom[TestData](client, "/forbidden", nil)
 	require.Error(t, err)
 }
 
@@ -138,7 +138,7 @@ func TestFetchOneFrom(t *testing.T) {
 	defer server.Close()
 
 	client := NewClient(server.URL, "dummy-token")
-	result, err := FetchOneFrom[TestData](client, "/one")
+	result, err := FetchOneFrom[TestData](client, "/one", nil)
 	require.NoError(t, err)
 	require.NotNil(t, result)
 	require.Equal(t, "one", result.Name)
