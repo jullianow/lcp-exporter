@@ -2,6 +2,26 @@ apiVersion: v1
 entries:
   lcp-exporter:
   - apiVersion: v2
+    appVersion: v0.0.7
+    created: "2025-04-10T02:37:50.042818224Z"
+    description: A Helm chart for LCP Exporter
+    digest: c34d053b972daa804c57955d11290b41522854134a0fed634ef573122f186310
+    home: https://github.com/jullianow/lcp-exporter
+    icon: https://raw.githubusercontent.com/cncf/artwork/master/prometheus/icon/color/prometheus-icon-color.svg
+    keywords:
+    - prometheus
+    - lcp
+    maintainers:
+    - email: jullianiw@gmail.com
+      name: jullianow
+      url: https://github.com/jullianow
+    name: lcp-exporter
+    sources:
+    - https://github.com/jullianow/lcp-exporter
+    urls:
+    - https://github.com/jullianow/lcp-exporter/releases/download/lcp-exporter-0.0.7/lcp-exporter-0.0.7.tgz
+    version: 0.0.7
+  - apiVersion: v2
     appVersion: v0.0.6
     created: "2025-04-09T23:55:30.561453811Z"
     description: A Helm chart for LCP Exporter
@@ -110,4 +130,4 @@ entries:
     urls:
     - https://github.com/jullianow/lcp-exporter/releases/download/lcp-exporter-0.0.1/lcp-exporter-0.0.1.tgz
     version: 0.0.1
-generated: "2025-04-09T23:55:30.561480882Z"
+generated: "2025-04-10T02:37:50.042843422Z"
