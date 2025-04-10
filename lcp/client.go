@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"time"
 
 	"github.com/jullianow/lcp-exporter/internal"
@@ -24,8 +25,24 @@ func NewClient(baseURL, bearerToken string) *Client {
 	}
 }
 
-func (c *Client) MakeRequest(path string) (*http.Response, error) {
-	url := fmt.Sprintf("%s%s", c.BaseURL, path)
+func (c *Client) buildURL(path string, queryParams map[string]string) string {
+	baseURL := fmt.Sprintf("%s%s", c.BaseURL, path)
+
+	if len(queryParams) > 0 {
+		params := url.Values{}
+		for key, value := range queryParams {
+			params.Add(key, value)
+		}
+
+		return fmt.Sprintf("%s?%s", baseURL, params.Encode())
+	}
+
+	return baseURL
+}
+
+func (c *Client) MakeRequest(path string, queryParams map[string]string) (*http.Response, error) {
+	url := c.buildURL(path, queryParams)
+
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, err
@@ -106,8 +123,8 @@ func ParseEnvelope[T any](body []byte) ([]T, error) {
 	return nil, fmt.Errorf("failed to parse response")
 }
 
-func FetchFrom[T any](c *Client, path string) ([]T, error) {
-	resp, err := c.MakeRequest(path)
+func FetchFrom[T any](c *Client, path string, queryParams map[string]string) ([]T, error) {
+	resp, err := c.MakeRequest(path, queryParams)
 	if err != nil {
 		internal.LogError("FetchFrom", "Request failed for path %s: %v", path, err)
 		return nil, err
@@ -127,8 +144,8 @@ func FetchFrom[T any](c *Client, path string) ([]T, error) {
 	return ParseEnvelope[T](body)
 }
 
-func FetchOneFrom[T any](c *Client, path string) (*T, error) {
-	results, err := FetchFrom[T](c, path)
+func FetchOneFrom[T any](c *Client, path string, queryParams map[string]string) (*T, error) {
+	results, err := FetchFrom[T](c, path, queryParams)
 	if err != nil {
 		return nil, err
 	}

@@ -67,7 +67,7 @@ func (pc *ProjectsCollector) FetchInitial() {
 }
 
 func (pc *ProjectsCollector) fetch() []shared.Projects {
-	projects, err := lcp.FetchFrom[shared.Projects](pc.client, "/admin/projects")
+	projects, err := lcp.FetchFrom[shared.Projects](pc.client, "/admin/projects", nil)
 	if err != nil {
 		internal.LogError("ProjectsCollector", "Failed to fetch projects: %v", err)
 		return nil
@@ -95,7 +95,7 @@ func (pc *ProjectsCollector) Collect(ch chan<- prometheus.Metric) {
 		}
 
 		health := project.Health == "healthy"
-		rootProject := project.ProjectID == project.ParentProjectID
+		rootProject := internal.IsParentProject(project)
 		parentID := project.ParentProjectID
 		if rootProject {
 			parentID = ""
