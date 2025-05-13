@@ -1,6 +1,8 @@
 package admin
 
 import (
+	"fmt"
+	"strings"
 	"sync"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -11,9 +13,11 @@ import (
 )
 
 type clusterDiscoveryCollector struct {
-	client *lcp.Client
-	count  *prometheus.Desc
-	info   *prometheus.Desc
+	client             *lcp.Client
+	clusterTotal       *prometheus.Desc
+	labels             *prometheus.Desc
+	caCreatedTimestamp *prometheus.Desc
+	caExpiredTimestamp *prometheus.Desc
 }
 
 func NewClusterDiscoveryCollector(client *lcp.Client) *clusterDiscoveryCollector {
@@ -21,18 +25,37 @@ func NewClusterDiscoveryCollector(client *lcp.Client) *clusterDiscoveryCollector
 
 	return &clusterDiscoveryCollector{
 		client: client,
-		count: prometheus.NewDesc(
-			fqName("count"),
+		clusterTotal: prometheus.NewDesc(
+			fqName("clusters_total"),
 			"Total number of discovered clusters",
 			nil, nil,
 		),
-		info: prometheus.NewDesc(
-			fqName("info"),
-			"Information about discovered clusters",
-			[]string{"name", "provider", "cloud_project_id", "location", "plan_id", "is_lxc"},
+		labels: prometheus.NewDesc(
+			fqName("labels"),
+			"Labels of discovered clusters",
+			[]string{"lcp_cluster_name", "name", "provider", "cloud_project_id", "location", "plan_id", "is_lxc"},
+			nil,
+		),
+		caCreatedTimestamp: prometheus.NewDesc(
+			fqName("ca_created_timestamp"),
+			"Timestamp of the creation of CA",
+			[]string{"lcp_cluster_name"},
+			nil,
+		),
+		caExpiredTimestamp: prometheus.NewDesc(
+			fqName("ca_expired_timestamp"),
+			"Timestamp of the expiration of CA",
+			[]string{"lcp_cluster_name"},
 			nil,
 		),
 	}
+}
+
+func (c *clusterDiscoveryCollector) Describe(ch chan<- *prometheus.Desc) {
+	ch <- c.caCreatedTimestamp
+	ch <- c.caExpiredTimestamp
+	ch <- c.clusterTotal
+	ch <- c.labels
 }
 
 func (c *clusterDiscoveryCollector) Collect(ch chan<- prometheus.Metric) {
@@ -53,16 +76,20 @@ func (c *clusterDiscoveryCollector) collectMetrics(ch chan<- prometheus.Metric) 
 	}
 
 	ch <- prometheus.MustNewConstMetric(
-		c.count,
+		c.clusterTotal,
 		prometheus.GaugeValue,
 		float64(len(clusters)),
 	)
 
 	for _, cluster := range clusters {
+		lcpClusterName := strings.ToLower(fmt.Sprintf("%s_%s", cluster.Provider.CloudProjectID, cluster.Name))
+		notBefore, notAfter, _ := internal.GetCertValidityDatesInSeconds(cluster.Kubeconfig.Cluster.CaData)
+
 		ch <- prometheus.MustNewConstMetric(
-			c.info,
+			c.labels,
 			prometheus.GaugeValue,
 			1.0,
+			lcpClusterName,
 			cluster.Name,
 			cluster.Provider.Name,
 			cluster.Provider.CloudProjectID,
@@ -70,10 +97,18 @@ func (c *clusterDiscoveryCollector) collectMetrics(ch chan<- prometheus.Metric) 
 			cluster.PlanID,
 			internal.BoolToString(cluster.IsLXC),
 		)
-	}
-}
 
-func (c *clusterDiscoveryCollector) Describe(ch chan<- *prometheus.Desc) {
-	ch <- c.count
-	ch <- c.info
+		ch <- prometheus.MustNewConstMetric(
+			c.caCreatedTimestamp,
+			prometheus.GaugeValue,
+			float64(notBefore),
+			lcpClusterName,
+		)
+		ch <- prometheus.MustNewConstMetric(
+			c.caExpiredTimestamp,
+			prometheus.GaugeValue,
+			float64(notAfter),
+			lcpClusterName,
+		)
+	}
 }

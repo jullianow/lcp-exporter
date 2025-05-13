@@ -22,6 +22,11 @@ func TestClusterDiscoveryCollector(t *testing.T) {
 				"name": "gcp",
 				"cloudProjectId": "project-123"
 			},
+			"kubeconfig": {
+				"cluster": {
+					"caData": "base64-ca-data"
+				}
+			},
 			"customerBackupBucket": "gs://my-backup-bucket",
 			"location": "us-central1",
 			"planId": "plan-xyz",
@@ -29,7 +34,6 @@ func TestClusterDiscoveryCollector(t *testing.T) {
 		}
 	}`
 
-	// Servidor de teste simulando a API LCP
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		require.Equal(t, "/admin/cluster-discovery/discovered-clusters", r.URL.Path)
 		_, err := fmt.Fprintln(w, mockJSON)
@@ -37,19 +41,15 @@ func TestClusterDiscoveryCollector(t *testing.T) {
 	}))
 	defer server.Close()
 
-	// Cria o client apontando para o servidor fake
 	client := lcp.NewClient(server.URL, "fake-token")
 	collector := NewClusterDiscoveryCollector(client)
 
-	// Registra o coletor em um registry isolado
 	reg := prometheus.NewRegistry()
 	require.NoError(t, reg.Register(collector))
 
-	// Expõe as métricas e captura a saída
 	serverMetrics := httptest.NewServer(promhttp.HandlerFor(reg, promhttp.HandlerOpts{}))
 	defer serverMetrics.Close()
 
-	// Chamada real ao endpoint de métricas
 	resp, err := http.Get(serverMetrics.URL)
 	require.NoError(t, err)
 	defer func() {
@@ -62,6 +62,7 @@ func TestClusterDiscoveryCollector(t *testing.T) {
 
 	output := string(body)
 
-	require.Contains(t, output, `lcp_api_cluster_discovery_count 1`)
-	require.Contains(t, output, `lcp_api_cluster_discovery_info{cloud_project_id="project-123",is_lxc="true",location="us-central1",name="cluster-1",plan_id="plan-xyz",provider="gcp"} 1`)
+	require.Contains(t, output, `lcp_api_cluster_discovery_ca_created_timestamp{lcp_cluster_name="project-123_cluster-1"} 0`)
+	require.Contains(t, output, `lcp_api_cluster_discovery_clusters_total 1`)
+	require.Contains(t, output, `lcp_api_cluster_discovery_labels{cloud_project_id="project-123",is_lxc="true",lcp_cluster_name="project-123_cluster-1",location="us-central1",name="cluster-1",plan_id="plan-xyz",provider="gcp"} 1`)
 }

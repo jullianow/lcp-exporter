@@ -18,15 +18,19 @@ type infoCollector struct {
 func NewInfoCollector(client *lcp.Client) *infoCollector {
 	fqName := internal.Name("status")
 
-	labelKeys := []string{"version", "infrastructure_domain", "service_domain"}
 	return &infoCollector{
 		client: client,
 		info: prometheus.NewDesc(
 			fqName("info"),
 			"1 if the API is up, 0 if it is down",
-			labelKeys, nil,
+			[]string{"version", "infrastructure_domain", "service_domain"},
+			nil,
 		),
 	}
+}
+
+func (c *infoCollector) Describe(ch chan<- *prometheus.Desc) {
+	ch <- c.info
 }
 
 func (c *infoCollector) Collect(ch chan<- prometheus.Metric) {
@@ -59,8 +63,4 @@ func (c *infoCollector) collectMetrics(ch chan<- prometheus.Metric) {
 		data.Domains.Infrastructure,
 		data.Domains.Service,
 	)
-}
-
-func (c *infoCollector) Describe(ch chan<- *prometheus.Desc) {
-	ch <- c.info
 }

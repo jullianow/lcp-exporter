@@ -1,7 +1,7 @@
 package admin
 
 import (
-	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -10,65 +10,107 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
-	"github.com/jullianow/lcp-exporter/internal/shared"
 	"github.com/jullianow/lcp-exporter/lcp"
 )
 
-var mockProjectsResponse = []shared.Projects{
-	{
-		Id:              "proj-1",
-		Cluster:         "cluster-1",
-		Health:          "healthy",
-		ParentProjectID: "proj-1",
-		ProjectID:       "proj-1",
-		Status:          "running",
-		Metadata: shared.ProjectMetadata{
-			Commerce: true,
-			Type:     "dev",
-			Trial:    "false",
-		},
-	},
-	{
-		Id:              "proj-2",
-		Cluster:         "cluster-2",
-		Health:          "unhealthy",
-		ParentProjectID: "org-1",
-		ProjectID:       "proj-2",
-		Status:          "stopped",
-		Metadata: shared.ProjectMetadata{
-			Commerce: false,
-			Type:     "prod",
-			Trial:    "true",
-		},
-	},
-}
-
 func TestProjectsCollector(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		assert.Equal(t, "/admin/projects", r.URL.Path)
 
-		w.Header().Set("Content-Type", "application/json")
-		response, _ := json.Marshal(mockProjectsResponse)
-		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write(response)
+	mockJSON := `[
+	{
+		"id": "proj-1",
+		"cluster": "cluster-1",
+		"createdAt": 1672531199000,
+		"health": "healthy",
+		"organizationId": "proj-1",
+		"projectId": "proj-1",
+		"status": "running",
+		"metadata": {
+			"commerce": true,
+			"documentLibraryStore": "gcs",
+			"trial": "false",
+			"subscription": {
+			  "availability": "STD",
+			  "envType": "PRODUCTION"
+			}
+		},
+		"volumeStorageSize": 100,
+		"cloudOptions": {
+      "gcpDatabaseEdition": "ENTERPRISE",
+      "gcpDatabaseVersion": "POSTGRES_16",
+      "gcpDiskType": "PD_HDD",
+      "gcpDiskSize": "10",
+      "gcpInstanceType": "db-f1-micro"
+    }
+	},
+	{
+		"id": "proj-2",
+		"cluster": "cluster-2",
+		"createdAt": 1672531199000,
+		"health": "unhealthy",
+		"organizationId": "org-1",
+		"projectId": "proj-2",
+		"status": "stopped",
+		"metadata": {
+			"commerce": false,
+			"documentLibraryStore": "Simplestore",
+			"trial": "true",
+			"subscription": {
+			  "availability": "NONE",
+			  "envType": "NONE"
+			}
+		},
+		"volumeStorageSize": 100,
+		"cloudOptions": {
+      "gcpDatabaseEdition": "ENTERPRISE",
+      "gcpDatabaseVersion": "MYSQL_5_7",
+      "gcpDiskType": "PD_HDD",
+      "gcpDiskSize": "10",
+      "gcpInstanceType": "db-f1-micro"
+    }
+	}
+]`
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		require.Equal(t, "/admin/projects", r.URL.Path)
+		_, err := fmt.Fprintln(w, mockJSON)
+		require.NoError(t, err)
 	}))
 	defer server.Close()
 
-	client := lcp.NewClient(server.URL, "")
+	client := lcp.NewClient(server.URL, "fake-token")
 	collector := NewProjectsCollector(client)
 
-	registry := prometheus.NewRegistry()
-	registry.MustRegister(collector)
+	reg := prometheus.NewRegistry()
+	require.NoError(t, reg.Register(collector))
 
-	recorder := httptest.NewRecorder()
-	handler := promhttp.HandlerFor(registry, promhttp.HandlerOpts{})
-	handler.ServeHTTP(recorder, httptest.NewRequest("GET", "/metrics", nil))
+	serverMetrics := httptest.NewServer(promhttp.HandlerFor(reg, promhttp.HandlerOpts{}))
+	defer serverMetrics.Close()
 
-	body, _ := io.ReadAll(recorder.Body)
-	metricsOutput := string(body)
+	resp, err := http.Get(serverMetrics.URL)
+	require.NoError(t, err)
+	defer func() {
+		closeErr := resp.Body.Close()
+		require.NoError(t, closeErr)
+	}()
 
-	assert.Contains(t, metricsOutput, `lcp_api_projects_info{commerce="true",health="true",id="proj-1",name="proj-1",parent_project_id="",root_project="true",trial="false",type="dev"} 1`)
-	assert.Contains(t, metricsOutput, `lcp_api_projects_info{commerce="false",health="false",id="proj-2",name="proj-2",parent_project_id="org-1",root_project="false",trial="true",type="prod"} 0`)
-	assert.Contains(t, metricsOutput, `lcp_api_projects_count 2`)
+	body, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
+
+	output := string(body)
+
+	assert.Contains(t, output, `lcp_api_projects_create_timestamp{id="proj-1"} 1.672531199e+09`)
+	assert.Contains(t, output, `lcp_api_projects_create_timestamp{id="proj-1"} 1`)
+	assert.Contains(t, output, `lcp_api_projects_create_timestamp{id="proj-1"} 1`)
+	assert.Contains(t, output, `lcp_api_projects_create_timestamp{id="proj-2"} 1.672531199e+09`)
+	assert.Contains(t, output, `lcp_api_projects_db_labels{edition="ENTERPRISE",id="proj-2",type="db-f1-micro",version="MYSQL_5_7"} 1`)
+	assert.Contains(t, output, `lcp_api_projects_db_storage_capacity_bytes{disk_type="PD_HDD",id="proj-2"} 1e+10`)
+	assert.Contains(t, output, `lcp_api_projects_labels{availability="STD",cluster_name="cluster-1",commerce="true",doc_lib_store="gcs",health="true",id="proj-1",name="proj-1",parent_project_name="",root_project="true",trial="false",type="PRODUCTION"} 1`)
+	assert.Contains(t, output, `lcp_api_projects_labels{availability="NONE",cluster_name="cluster-2",commerce="false",doc_lib_store="Simplestore",health="false",id="proj-2",name="proj-2",parent_project_name="org-1",root_project="false",trial="true",type="NONE"} 1`)
+	assert.Contains(t, output, `lcp_api_projects_status{id="proj-1"} 1`)
+	assert.Contains(t, output, `lcp_api_projects_status{id="proj-2"} 0`)
+	assert.Contains(t, output, `lcp_api_projects_total 2`)
+	assert.Contains(t, output, `lcp_api_projects_volume_storage_capacity_bytes{id="proj-1"} 1.073741824e+11`)
+	assert.Contains(t, output, `lcp_api_projects_volume_storage_capacity_bytes{id="proj-2"} 1.073741824e+11`)
 }

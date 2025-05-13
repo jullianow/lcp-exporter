@@ -82,7 +82,6 @@ func main() {
 
 	dataRange := internal.CalculateDates(cfg.Duration)
 	projectsCollector := admin.NewProjectsCollector(client)
-	projectsCollector.FetchInitial()
 
 	collectorConfigs := []struct {
 		name      string

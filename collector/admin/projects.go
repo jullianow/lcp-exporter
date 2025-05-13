@@ -19,9 +19,14 @@ type ProjectsCollector struct {
 	projects []shared.Projects
 	mu       sync.RWMutex
 
-	count *prometheus.Desc
-	info  *prometheus.Desc
-	age   *prometheus.Desc
+	collaborators      *prometheus.Desc
+	create             *prometheus.Desc
+	dbLabels           *prometheus.Desc
+	dbStorageBytes     *prometheus.Desc
+	labels             *prometheus.Desc
+	status             *prometheus.Desc
+	total              *prometheus.Desc
+	volumeStorageBytes *prometheus.Desc
 }
 
 func NewProjectsCollector(client *lcp.Client) *ProjectsCollector {
@@ -29,24 +34,84 @@ func NewProjectsCollector(client *lcp.Client) *ProjectsCollector {
 
 	return &ProjectsCollector{
 		client: client,
-		count: prometheus.NewDesc(
-			fqName("count"),
+		collaborators: prometheus.NewDesc(
+			fqName("collaborators"),
+			"Number of collaborators per project",
+			[]string{"id"},
+			nil,
+		),
+		create: prometheus.NewDesc(
+			fqName("create_timestamp"),
+			"Timestamp of the creation per project",
+			[]string{"id"},
+			nil,
+		),
+		dbLabels: prometheus.NewDesc(
+			fqName("db_labels"),
+			"Labels about database per project",
+			[]string{
+				"id",
+				"type",
+				"version",
+				"edition",
+			}, nil,
+		),
+		dbStorageBytes: prometheus.NewDesc(
+			fqName("db_storage_capacity_bytes"),
+			"Total database storage capacity per project in bytes",
+			[]string{
+				"disk_type",
+				"id",
+			},
+			nil,
+		),
+		labels: prometheus.NewDesc(
+			fqName("labels"),
+			"Labels about project",
+			[]string{
+				"availability",
+				"cluster_name",
+				"commerce",
+				"doc_lib_store",
+				"health",
+				"id",
+				"name",
+				"parent_project_name",
+				"root_project",
+				"trial",
+				"type",
+			},
+			nil,
+		),
+		status: prometheus.NewDesc(
+			fqName("status"),
+			"Status of project. 1 if is running, 0 otherwise",
+			[]string{"id"},
+			nil,
+		),
+		total: prometheus.NewDesc(
+			fqName("total"),
 			"Total number of projects",
 			nil, nil,
 		),
-		info: prometheus.NewDesc(
-			fqName("info"),
-			"Information about projects. 1 if the project is running, 0 otherwise",
-			[]string{"commerce", "health", "id", "name", "parent_project_id", "root_project", "trial", "type"},
-			nil,
-		),
-		age: prometheus.NewDesc(
-			fqName("age"),
-			"Information about projects. 1 if the project is running, 0 otherwise",
+		volumeStorageBytes: prometheus.NewDesc(
+			fqName("volume_storage_capacity_bytes"),
+			"Total storage capacity per project in bytes",
 			[]string{"id"},
 			nil,
 		),
 	}
+}
+
+func (c *ProjectsCollector) Describe(ch chan<- *prometheus.Desc) {
+	ch <- c.collaborators
+	ch <- c.create
+	ch <- c.dbLabels
+	ch <- c.dbStorageBytes
+	ch <- c.labels
+	ch <- c.status
+	ch <- c.total
+	ch <- c.volumeStorageBytes
 }
 
 func (pc *ProjectsCollector) GetProjects() []shared.Projects {
@@ -83,7 +148,7 @@ func (pc *ProjectsCollector) Collect(ch chan<- prometheus.Metric) {
 	pc.mu.Unlock()
 
 	ch <- prometheus.MustNewConstMetric(
-		pc.count,
+		pc.total,
 		prometheus.GaugeValue,
 		float64(len(projects)),
 	)
@@ -95,37 +160,77 @@ func (pc *ProjectsCollector) Collect(ch chan<- prometheus.Metric) {
 		}
 
 		health := project.Health == "healthy"
-		rootProject := internal.IsParentProject(project)
-		parentID := project.ParentProjectID
-		if rootProject {
-			parentID = ""
+		isRootProject := false
+		rootProjectName := internal.RootProjectName(project)
+		if rootProjectName == "" {
+			isRootProject = true
 		}
 
 		ch <- prometheus.MustNewConstMetric(
-			pc.info,
+			pc.collaborators,
 			prometheus.GaugeValue,
-			status,
-			internal.BoolToString(project.Metadata.Commerce),
-			internal.BoolToString(health),
+			float64(len(project.Collaborators)),
 			project.Id,
-			project.ProjectID,
-			parentID,
-			internal.BoolToString(rootProject),
-			project.Metadata.Trial,
-			project.Metadata.Type,
 		)
 
 		ch <- prometheus.MustNewConstMetric(
-			pc.age,
+			pc.create,
 			prometheus.GaugeValue,
-			float64(project.CreatedAt),
+			internal.MillisToSeconds(project.CreatedAt),
 			project.Id,
 		)
-	}
-}
 
-func (c *ProjectsCollector) Describe(ch chan<- *prometheus.Desc) {
-	ch <- c.count
-	ch <- c.info
-	ch <- c.age
+		ch <- prometheus.MustNewConstMetric(
+			pc.labels,
+			prometheus.GaugeValue,
+			1.0,
+			project.Metadata.Subscription.Availability,
+			project.Cluster,
+			internal.BoolToString(project.Metadata.Commerce),
+			project.Metadata.DocLibStore,
+			internal.BoolToString(health),
+			project.Id,
+			project.ProjectID,
+			rootProjectName,
+			internal.BoolToString(isRootProject),
+			project.Metadata.Trial,
+			project.Metadata.Subscription.EnvType,
+		)
+
+		ch <- prometheus.MustNewConstMetric(
+			pc.status,
+			prometheus.GaugeValue,
+			status,
+			project.Id,
+		)
+
+		ch <- prometheus.MustNewConstMetric(
+			pc.volumeStorageBytes,
+			prometheus.GaugeValue,
+			float64(internal.GiBToBytes(project.VolumeStorageSize)),
+			project.Id,
+		)
+
+		if project.CloudOptions != (shared.ProjectCloudOptions{}) && !isRootProject {
+			ch <- prometheus.MustNewConstMetric(
+				pc.dbLabels,
+				prometheus.GaugeValue,
+				1.0,
+				project.Id,
+				project.CloudOptions.InstanceType,
+				project.CloudOptions.DatabaseVersion,
+				project.CloudOptions.DatabaseEdition,
+			)
+
+			if project.CloudOptions.DiskSize != "" {
+				ch <- prometheus.MustNewConstMetric(
+					pc.dbStorageBytes,
+					prometheus.GaugeValue,
+					float64(internal.GBToBytes(internal.StringToInt64(project.CloudOptions.DiskSize))),
+					project.CloudOptions.DiskType,
+					project.Id,
+				)
+			}
+		}
+	}
 }

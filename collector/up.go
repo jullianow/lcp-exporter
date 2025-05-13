@@ -18,15 +18,19 @@ type upCollector struct {
 func NewUpCollector(client *lcp.Client) *upCollector {
 	fqName := internal.Name("status")
 
-	labelKeys := []string{"status"}
 	return &upCollector{
 		client: client,
 		up: prometheus.NewDesc(
 			fqName("up"),
 			"1 if the API is up, 0 if it is down",
-			labelKeys, nil,
+			[]string{"status"},
+			nil,
 		),
 	}
+}
+
+func (c *upCollector) Describe(ch chan<- *prometheus.Desc) {
+	ch <- c.up
 }
 
 func (c *upCollector) Collect(ch chan<- prometheus.Metric) {
@@ -64,8 +68,4 @@ func (c *upCollector) collectMetrics(ch chan<- prometheus.Metric) {
 		value,
 		status,
 	)
-}
-
-func (c *upCollector) Describe(ch chan<- *prometheus.Desc) {
-	ch <- c.up
 }

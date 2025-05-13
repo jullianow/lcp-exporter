@@ -17,6 +17,10 @@ GO_BUILD_FLAGS = --ldflags "-X main.VERSION=$(TAG) -w -extldflags '-static'" -ta
 
 all: all fmt lint test build docker
 
+deps:
+	$(GO) mod tidy
+	$(GO) mod vendor
+
 lint:
 	$(LINTER) run $(SRC_DIR)/...
 

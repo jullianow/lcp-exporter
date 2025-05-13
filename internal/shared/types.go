@@ -29,24 +29,43 @@ type ClusterDiscovery struct {
 	CustomerBackupBucket string   `json:"customerBackupBucket"`
 	PlanID               string   `json:"planId"`
 	IsLXC                bool     `json:"isLXC"`
+	Kubeconfig           struct {
+		Cluster struct {
+			CaData string `json:"caData"`
+		} `json:"cluster"`
+	} `json:"kubeconfig"`
+}
+
+type ProjectCloudOptions struct {
+	DatabaseEdition string `json:"gcpDatabaseEdition"`
+	DatabaseVersion string `json:"gcpDatabaseVersion"`
+	DiskSize        string `json:"gcpDiskSize"`
+	DiskType        string `json:"gcpDiskType"`
+	InstanceType    string `json:"gcpInstanceType"`
 }
 
 type ProjectMetadata struct {
-	Commerce bool   `json:"commerce"`
-	Type     string `json:"type"`
-	Trial    string `json:"trial"`
+	Commerce     bool   `json:"commerce"`
+	DocLibStore  string `json:"documentLibraryStore"`
+	Trial        string `json:"trial"`
+	Subscription struct {
+		Availability string `json:"availability"`
+		EnvType      string `json:"envType"`
+	} `json:"subscription"`
 }
 
 type Projects struct {
-	Id              string          `json:"id"`
-	Cluster         string          `json:"cluster"`
-	Health          string          `json:"health"`
-	ParentProjectID string          `json:"organizationId"`
-	ProjectID       string          `json:"projectId"`
-	Status          string          `json:"status"`
-	Metadata        ProjectMetadata `json:"metadata"`
-	Type            string          `json:"type"`
-	CreatedAt       int             `json:"createdAt"`
+	CloudOptions      ProjectCloudOptions `json:"cloudOptions"`
+	Cluster           string              `json:"cluster"`
+	Collaborators     []string            `json:"collaborators"`
+	CreatedAt         int64               `json:"createdAt"`
+	Health            string              `json:"health"`
+	Id                string              `json:"id"`
+	Metadata          ProjectMetadata     `json:"metadata"`
+	OrganizationId    string              `json:"organizationId"`
+	ProjectID         string              `json:"projectId"`
+	Status            string              `json:"status"`
+	VolumeStorageSize int64               `json:"volumeStorageSize"`
 }
 
 type AutoscaleCost struct {
@@ -54,34 +73,36 @@ type AutoscaleCost struct {
 	Currency string  `json:"currency"`
 }
 
-type AutoscaleHistory struct {
-	ProjectID                 string        `json:"projectId"`
-	Availability              string        `json:"availability"`
-	ServiceID                 string        `json:"serviceId"`
-	NumAddedInstances         int           `json:"numAddedInstances"`
-	ActiveTimePerInstanceMs   int64         `json:"activeTimePerInstanceMs"`
-	ActiveTimeMs              int64         `json:"activeTimeMs"`
-	BillableTimePerInstanceMs int64         `json:"billableTimePerInstanceMs"`
-	BillableTimeMs            int64         `json:"billableTimeMs"`
-	Cost                      AutoscaleCost `json:"cost"`
-	Price                     AutoscaleCost `json:"price"`
+type AutoscaleActivationHistory struct {
+	DisabledAt      int64  `json:"disabledAt"`
+	DisabledByEmail string `json:"disabledByEmail"`
+	EnabledAt       int64  `json:"enabledAt"`
+	EnabledByEmail  string `json:"enabledByEmail"`
+	ProjectID       string `json:"projectId"`
+	ServiceID       string `json:"serviceId"`
+	MaxInstances    int    `json:"maxInstances"`
+}
+
+type AutoscaleScalingHistory struct {
+	ActiveTimePerInstanceMs int64  `json:"activeTimePerInstanceMs"`
+	EndedAt                 int64  `json:"endedAt"`
+	NumAdditionalInstances  int    `json:"numAdditionalInstances"`
+	ProjectID               string `json:"projectId"`
+	ServiceID               string `json:"serviceId"`
+	StartedAt               int64  `json:"startedAt"`
+}
+
+type AutoscaleProject struct {
+	Availability      string        `json:"availability"`
+	BillableTimeMs    int64         `json:"billableTimeMs"`
+	Cost              AutoscaleCost `json:"cost"`
+	Price             AutoscaleCost `json:"price"`
+	TotalActiveTimeMs int64         `json:"totalActiveTimeMs"`
 }
 
 type Autoscale struct {
-	AutoscaleHistory        []AutoscaleHistory `json:"autoscaleHistory"`
-	CurrencyCode            string             `json:"currencyCode"`
-	IncludedChildProjectIds []string           `json:"includedChildProjectIds"`
-	NumActiveChildProjects  int                `json:"numActiveChildProjects"`
-	ProjectIds              []string           `json:"projectIds"`
-	TotalActiveTimeMs       int64              `json:"totalActiveTimeMs"`
-	TotalBillableTimeMs     int64              `json:"totalBillableTimeMs"`
-}
-
-type AutoscaleOverview struct {
-	CurrencyCode           string  `json:"currencyCode"`
-	NumActiveChildProjects int     `json:"numActiveChildProjects"`
-	ParentProjectID        string  `json:"parentProjectId"`
-	TotalActiveTimeMs      int64   `json:"totalActiveTimeMs"`
-	TotalBillableTimeMs    int64   `json:"totalBillableTimeMs"`
-	TotalCost              float64 `json:"totalCost"`
+	ActivationHistory       []AutoscaleActivationHistory `json:"activationHistory"`
+	IncludedChildProjectIds []string                     `json:"includedChildProjectIds"`
+	ScalingHistory          []AutoscaleScalingHistory    `json:"scaleHistory"`
+	SubtotalsByProjectId    map[string]AutoscaleProject  `json:"subtotalsByProjectId"`
 }
